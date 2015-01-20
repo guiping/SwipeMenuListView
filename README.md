@@ -1,6 +1,5 @@
 SwipeMenuListView
 =================
-[![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-SwipeMenuListView-brightgreen.svg?style=flat)](https://android-arsenal.com/details/1/912)
 
 A SwipeMenu of ListView.
 
@@ -74,7 +73,7 @@ listView.setMenuCreator(creator);
 ```java
 listView.setOnMenuItemClickListener(new OnMenuItemClickListener() {
 	@Override
-	public boolean onMenuItemClick(int position, SwipeMenu menu, int index) {
+	public void onMenuItemClick(int position, SwipeMenu menu, int index) {
 		switch (index) {
 		case 0:
 			// open
@@ -83,8 +82,6 @@ listView.setOnMenuItemClickListener(new OnMenuItemClickListener() {
 			// delete
 			break;
 		}
-		// false : close the menu; true : not close the menu
-		return false;
 	}
 });
 ```
@@ -160,12 +157,6 @@ listView.setOnSwipeListener(new OnSwipeListener() {
 		// swipe end
 	}
 });
-```
-
-* open menu method for SwipeMenuListView
-
-```java
-listView.smoothOpenMenu(position);
 ```
 
 * Open/Close Animation Interpolator

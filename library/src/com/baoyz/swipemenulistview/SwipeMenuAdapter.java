@@ -1,17 +1,19 @@
 package com.baoyz.swipemenulistview;
 
+import java.io.ObjectInputStream.GetField;
+
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.BaseAdapter;
 import android.widget.ListAdapter;
 import android.widget.WrapperListAdapter;
 
 import com.baoyz.swipemenulistview.SwipeMenuListView.OnMenuItemClickListener;
-import com.baoyz.swipemenulistview.SwipeMenuView.OnSwipeItemClickListener;
+import com.baoyz.swipemenulistview.SwipeMenuView.OnItemClickListener;
 
 /**
  * 
@@ -20,7 +22,7 @@ import com.baoyz.swipemenulistview.SwipeMenuView.OnSwipeItemClickListener;
  * 
  */
 public class SwipeMenuAdapter implements WrapperListAdapter,
-		OnSwipeItemClickListener {
+		OnItemClickListener {
 
 	private ListAdapter mAdapter;
 	private Context mContext;
@@ -56,7 +58,7 @@ public class SwipeMenuAdapter implements WrapperListAdapter,
 			createMenu(menu);
 			SwipeMenuView menuView = new SwipeMenuView(menu,
 					(SwipeMenuListView) parent);
-			menuView.setOnSwipeItemClickListener(this);
+			menuView.setOnItemClickListener(this);
 			SwipeMenuListView listView = (SwipeMenuListView) parent;
 			layout = new SwipeMenuLayout(contentView, menuView,
 					listView.getCloseInterpolator(),

@@ -26,6 +26,8 @@
         </activity>
         <activity android:name="com.baoyz.swipemenulistviewsample.DifferentMenuActivity" >
         </activity>
+        <activity android:name="com.baoyz.swipemenulistviewsample.SimplePullToRefreshActivity" >
+        </activity>
     </application>
 
 </manifest>

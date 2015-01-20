@@ -4,17 +4,18 @@ import android.content.Context;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.widget.ScrollerCompat;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.GestureDetector.OnGestureListener;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver.OnDrawListener;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.animation.Interpolator;
-import android.widget.AbsListView;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 /**
  * 
@@ -84,8 +85,6 @@ public class SwipeMenuLayout extends FrameLayout {
 	}
 
 	private void init() {
-		setLayoutParams(new AbsListView.LayoutParams(LayoutParams.MATCH_PARENT,
-				LayoutParams.WRAP_CONTENT));
 		mGestureListener = new SimpleOnGestureListener() {
 			@Override
 			public boolean onDown(MotionEvent e) {
@@ -131,8 +130,9 @@ public class SwipeMenuLayout extends FrameLayout {
 		}
 
 		mMenuView.setId(MENU_VIEW_ID);
+		mMenuView.setVisibility(View.GONE);
 		mMenuView.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT,
-				LayoutParams.WRAP_CONTENT));
+				LayoutParams.MATCH_PARENT));
 
 		addView(mContentView);
 		addView(mMenuView);
@@ -141,16 +141,19 @@ public class SwipeMenuLayout extends FrameLayout {
 		// mContentView.setBackgroundColor(Color.WHITE);
 		// }
 
-		// in android 2.x, MenuView height is MATCH_PARENT is not work.
-		// getViewTreeObserver().addOnGlobalLayoutListener(
-		// new OnGlobalLayoutListener() {
-		// @Override
-		// public void onGlobalLayout() {
-		// setMenuHeight(mContentView.getHeight());
-		// // getViewTreeObserver()
-		// // .removeGlobalOnLayoutListener(this);
-		// }
-		// });
+		// in android 2.x, MenuView height is MATCH_PARENT is not work. 
+		getViewTreeObserver().addOnGlobalLayoutListener(
+				new OnGlobalLayoutListener() {
+					@Override
+					public void onGlobalLayout() {
+						LayoutParams params = (LayoutParams) mMenuView
+								.getLayoutParams();
+						params.height = mContentView.getHeight();
+						mMenuView.setLayoutParams(mMenuView.getLayoutParams());
+						getViewTreeObserver()
+								.removeGlobalOnLayoutListener(this);
+					}
+				});
 
 	}
 
@@ -203,6 +206,9 @@ public class SwipeMenuLayout extends FrameLayout {
 	}
 
 	private void swipe(int dis) {
+		if (mMenuView.getVisibility() == View.GONE) {
+			mMenuView.setVisibility(View.VISIBLE);
+		}
 		if (dis > mMenuView.getWidth()) {
 			dis = mMenuView.getWidth();
 		}
@@ -276,30 +282,11 @@ public class SwipeMenuLayout extends FrameLayout {
 	}
 
 	@Override
-	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		mMenuView.measure(MeasureSpec.makeMeasureSpec(0,
-				MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(
-				getMeasuredHeight(), MeasureSpec.EXACTLY));
-	}
-
-	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
-		mContentView.layout(0, 0, getMeasuredWidth(),
-				mContentView.getMeasuredHeight());
+		mContentView.layout(0, 0, getMeasuredWidth(), getMeasuredHeight());
 		mMenuView.layout(getMeasuredWidth(), 0,
 				getMeasuredWidth() + mMenuView.getMeasuredWidth(),
-				mContentView.getMeasuredHeight());
-		// setMenuHeight(mContentView.getMeasuredHeight());
+				getMeasuredHeight());
 		// bringChildToFront(mContentView);
-	}
-
-	public void setMenuHeight(int measuredHeight) {
-		Log.i("byz", "pos = " + position + ", height = " + measuredHeight);
-		LayoutParams params = (LayoutParams) mMenuView.getLayoutParams();
-		if (params.height != measuredHeight) {
-			params.height = measuredHeight;
-			mMenuView.setLayoutParams(mMenuView.getLayoutParams());
-		}
 	}
 }

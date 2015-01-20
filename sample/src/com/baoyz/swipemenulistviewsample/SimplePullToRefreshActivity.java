@@ -1,24 +1,15 @@
 package com.baoyz.swipemenulistviewsample;
 
-import java.util.List;
-
 import android.app.Activity;
-import android.content.ComponentName;
-import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.TypedValue;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.BaseAdapter;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.baoyz.swipemenulistview.SwipeMenu;
@@ -28,21 +19,55 @@ import com.baoyz.swipemenulistview.SwipeMenuListView;
 import com.baoyz.swipemenulistview.SwipeMenuListView.OnMenuItemClickListener;
 import com.baoyz.swipemenulistview.SwipeMenuListView.OnSwipeListener;
 
-public class SimpleActivity extends Activity {
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
-	private List<ApplicationInfo> mAppList;
-	private AppAdapter mAdapter;
+/**
+ *
+ * @author 韩加虎
+ * @date 2015-1-20
+ *
+ */
+public class SimplePullToRefreshActivity extends Activity implements SwipeMenuListView.OnRefreshListener,
+        SwipeMenuListView.OnLoadListener {
+
+    private SwipeMenuListView listView;
+    private List<String> list;
+    private ListViewAdapter adapter;
+
+    private Handler handler = new Handler() {
+        public void handleMessage(Message msg) {
+            List<String> result = (List<String>) msg.obj;
+            switch (msg.what) {
+                case SwipeMenuListView.REFRESH:
+                    listView.onRefreshComplete();
+                    list.clear();
+                    list.addAll(result);
+                    break;
+                case SwipeMenuListView.LOAD:
+                    listView.onLoadComplete();
+                    list.addAll(result);
+                    break;
+            }
+//            listView.setResultSize(result.size());
+            adapter.notifyDataSetChanged();
+        }
+    };
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_list);
 
-		mAppList = getPackageManager().getInstalledApplications(0);
+        list = getData();
+        listView = (SwipeMenuListView) findViewById(R.id.listView);
+        adapter = new ListViewAdapter(this, list);
+        listView.setAdapter(adapter);
+        listView.setOnRefreshListener(this);
+        listView.setOnLoadListener(this);
+        initData();
 
-		SwipeMenuListView listView = (SwipeMenuListView) findViewById(R.id.listView);
-		mAdapter = new AppAdapter();
-		listView.setAdapter(mAdapter);
 
 		// step 1. create a MenuCreator
 		SwipeMenuCreator creator = new SwipeMenuCreator() {
@@ -87,7 +112,7 @@ public class SimpleActivity extends Activity {
 		listView.setOnMenuItemClickListener(new OnMenuItemClickListener() {
 			@Override
 			public void onMenuItemClick(int position, SwipeMenu menu, int index) {
-				ApplicationInfo item = mAppList.get(position);
+				String item = list.get(position);
 				switch (index) {
 				case 0:
 					// open
@@ -96,8 +121,8 @@ public class SimpleActivity extends Activity {
 				case 1:
 					// delete
 //					delete(item);
-					mAppList.remove(position);
-					mAdapter.notifyDataSetChanged();
+					list.remove(position);
+					adapter.notifyDataSetChanged();
 					break;
 				}
 			}
@@ -126,86 +151,64 @@ public class SimpleActivity extends Activity {
 			@Override
 			public boolean onItemLongClick(AdapterView<?> parent, View view,
 					int position, long id) {
-				Toast.makeText(getApplicationContext(), position + " long click", 0).show();
+				Toast.makeText(getApplicationContext(), position + " long click", Toast.LENGTH_SHORT).show();
 				return false;
 			}
 		});
 	}
 
-	private void delete(ApplicationInfo item) {
-		// delete app
-		try {
-			Intent intent = new Intent(Intent.ACTION_DELETE);
-			intent.setData(Uri.fromParts("package", item.packageName, null));
-			startActivity(intent);
-		} catch (Exception e) {
-		}
+    private void initData() {
+        loadData(SwipeMenuListView.REFRESH);
+    }
+
+    private void loadData(final int what) {
+        // 这里模拟从服务器获取数据
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(1200);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                Message msg = handler.obtainMessage();
+                msg.what = what;
+                msg.obj = getData();
+                handler.sendMessage(msg);
+            }
+        }).start();
+    }
+
+    @Override
+    public void onRefresh() {
+        loadData(SwipeMenuListView.REFRESH);
+    }
+
+    @Override
+    public void onLoad() {
+        loadData(SwipeMenuListView.LOAD);
+    }
+
+    // 测试数据
+    public List<String> getData() {
+        List<String> result = new ArrayList<String>();
+        Random random = new Random();
+        for (int i = 0; i < 10; i++) {
+            long l = random.nextInt(10000);
+            result.add("当前条目的ID：" + l);
+        }
+        return result;
+    }
+
+	private void delete(String item) {
 	}
 
-	private void open(ApplicationInfo item) {
-		// open app
-		Intent resolveIntent = new Intent(Intent.ACTION_MAIN, null);
-		resolveIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-		resolveIntent.setPackage(item.packageName);
-		List<ResolveInfo> resolveInfoList = getPackageManager()
-				.queryIntentActivities(resolveIntent, 0);
-		if (resolveInfoList != null && resolveInfoList.size() > 0) {
-			ResolveInfo resolveInfo = resolveInfoList.get(0);
-			String activityPackageName = resolveInfo.activityInfo.packageName;
-			String className = resolveInfo.activityInfo.name;
-
-			Intent intent = new Intent(Intent.ACTION_MAIN);
-			intent.addCategory(Intent.CATEGORY_LAUNCHER);
-			ComponentName componentName = new ComponentName(
-					activityPackageName, className);
-
-			intent.setComponent(componentName);
-			startActivity(intent);
-		}
+	private void open(String item) {
+		Toast.makeText(this,"open item ",Toast.LENGTH_SHORT).show();
 	}
 
-	class AppAdapter extends BaseAdapter {
 
-		@Override
-		public int getCount() {
-			return mAppList.size();
-		}
-
-		@Override
-		public ApplicationInfo getItem(int position) {
-			return mAppList.get(position);
-		}
-
-		@Override
-		public long getItemId(int position) {
-			return position;
-		}
-
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
-			if (convertView == null) {
-				convertView = View.inflate(getApplicationContext(),
-						R.layout.item_list_app, null);
-				new ViewHolder(convertView);
-			}
-			ViewHolder holder = (ViewHolder) convertView.getTag();
-			ApplicationInfo item = getItem(position);
-			holder.iv_icon.setImageDrawable(item.loadIcon(getPackageManager()));
-			holder.tv_name.setText(item.loadLabel(getPackageManager()));
-			return convertView;
-		}
-
-		class ViewHolder {
-			ImageView iv_icon;
-			TextView tv_name;
-
-			public ViewHolder(View view) {
-				iv_icon = (ImageView) view.findViewById(R.id.iv_icon);
-				tv_name = (TextView) view.findViewById(R.id.tv_name);
-				view.setTag(this);
-			}
-		}
-	}
 
 	private int dp2px(int dp) {
 		return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp,
